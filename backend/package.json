@@ -6,6 +6,10 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js"
   },
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
