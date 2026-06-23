@@ -1,10 +1,21 @@
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const dir = path.join(__dirname, '..', 'uploads');
-if(!fs.existsSync(dir)) fs.mkdirSync(dir, {recursive:true});
-const storage = multer.diskStorage({
-  destination: (req,file,cb)=>cb(null, dir),
-  filename: (req,file,cb)=>cb(null, Date.now()+'-'+Math.round(Math.random()*1e9)+path.extname(file.originalname))
+const multer = require("multer");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-module.exports = multer({ storage });
+
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "stayfinder/rooms",
+    allowed_formats: ["jpg", "jpeg", "png", "webp", "jfif"],
+  },
+});
+
+const upload = multer({ storage });
+
+module.exports = upload;
