@@ -5,9 +5,15 @@ const upload = require("../middleware/upload");
 
 function normalizeRoomBody(body) {
   const data = { ...body };
+
   if (Object.prototype.hasOwnProperty.call(data, "price")) {
     data.price = Number(data.price);
   }
+
+  if (Object.prototype.hasOwnProperty.call(data, "rating")) {
+    data.rating = Number(data.rating);
+  }
+
   return data;
 }
 
@@ -33,12 +39,17 @@ function mergeRoomList(list) {
     const key = groupKey(obj);
 
     if (!map.has(key)) {
-      map.set(key, { ...obj, images: [...new Set(obj.images || [])] });
+      map.set(key, {
+        ...obj,
+        images: [...new Set(obj.images || [])],
+      });
     } else {
       const existing = map.get(key);
+
       existing.images = [
         ...new Set([...(existing.images || []), ...(obj.images || [])]),
       ];
+
       existing.createdAt = existing.createdAt || obj.createdAt;
       existing.updatedAt = obj.updatedAt || existing.updatedAt;
     }
@@ -50,7 +61,11 @@ function mergeRoomList(list) {
 router.get("/", async (req, res) => {
   try {
     const { city, maxPrice, category, q } = req.query;
-    const filter = { status: "available", isApproved: true };
+
+    const filter = {
+      status: "available",
+      isApproved: true,
+    };
 
     if (city) filter.city = new RegExp(city, "i");
     if (category) filter.category = category;
@@ -71,6 +86,7 @@ router.get("/", async (req, res) => {
 
     res.json(mergeRoomList(rooms));
   } catch (error) {
+    console.error("GET ROOMS ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -83,6 +99,7 @@ router.get("/owner/my", protect, allow("owner"), ownerApproved, async (req, res)
 
     res.json(mergeRoomList(rooms));
   } catch (error) {
+    console.error("GET OWNER ROOMS ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -90,10 +107,15 @@ router.get("/owner/my", protect, allow("owner"), ownerApproved, async (req, res)
 router.get("/:id", async (req, res) => {
   try {
     const room = await Room.findById(req.params.id)
-      .populate("owner", "name businessName upiId qrImage phone email city state address")
+      .populate(
+        "owner",
+        "name businessName upiId qrImage phone email city state address"
+      )
       .lean();
 
-    if (!room) return res.status(404).json({ message: "Room not found" });
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
 
     const siblings = await Room.find({
       owner: room.owner?._id || room.owner,
@@ -105,15 +127,20 @@ router.get("/:id", async (req, res) => {
     }).lean();
 
     const allImages = [];
-    siblings.forEach((r) =>
+
+    siblings.forEach((r) => {
       (r.images || []).forEach((img) => {
-        if (img && !allImages.includes(img)) allImages.push(img);
-      })
-    );
+        if (img && !allImages.includes(img)) {
+          allImages.push(img);
+        }
+      });
+    });
 
     room.images = allImages.length ? allImages : room.images || [];
+
     res.json(room);
   } catch (error) {
+    console.error("GET ROOM DETAIL ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -126,12 +153,20 @@ router.post(
   upload.array("images", 10),
   async (req, res) => {
     try {
-      const images = (req.files || []).map((f) => f.path);
+      console.log("ROOM UPLOAD BODY:", req.body);
+      console.log("ROOM UPLOAD FILES:", req.files);
+
+      const images = (req.files || [])
+        .map((file) => file.path || file.secure_url || file.url)
+        .filter(Boolean);
 
       const body = normalizeRoomBody(req.body);
 
       const amenities = body.amenities
-        ? body.amenities.split(",").map((a) => a.trim()).filter(Boolean)
+        ? body.amenities
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
         : [];
 
       const room = await Room.create({
@@ -143,6 +178,7 @@ router.post(
 
       res.status(201).json(room);
     } catch (error) {
+      console.error("ROOM UPLOAD ERROR:", error);
       res.status(500).json({ message: error.message });
     }
   }
@@ -161,9 +197,14 @@ router.put(
         owner: req.user._id,
       });
 
-      if (!room) return res.status(404).json({ message: "Room not found" });
+      if (!room) {
+        return res.status(404).json({ message: "Room not found" });
+      }
 
-      const images = (req.files || []).map((f) => f.path);
+      const images = (req.files || [])
+        .map((file) => file.path || file.secure_url || file.url)
+        .filter(Boolean);
+
       const body = normalizeRoomBody(req.body);
 
       Object.assign(room, body);
@@ -171,15 +212,19 @@ router.put(
       if (body.amenities) {
         room.amenities = body.amenities
           .split(",")
-          .map((a) => a.trim())
+          .map((item) => item.trim())
           .filter(Boolean);
       }
 
-      if (images.length) room.images = images;
+      if (images.length) {
+        room.images = images;
+      }
 
       await room.save();
+
       res.json(room);
     } catch (error) {
+      console.error("ROOM UPDATE ERROR:", error);
       res.status(500).json({ message: error.message });
     }
   }
@@ -194,10 +239,13 @@ router.delete("/:id", protect, allow("owner", "admin"), async (req, res) => {
 
     const room = await Room.findOneAndDelete(query);
 
-    if (!room) return res.status(404).json({ message: "Room not found" });
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
 
     res.json({ message: "Room deleted" });
   } catch (error) {
+    console.error("DELETE ROOM ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -214,13 +262,16 @@ router.patch(
         owner: req.user._id,
       });
 
-      if (!room) return res.status(404).json({ message: "Room not found" });
+      if (!room) {
+        return res.status(404).json({ message: "Room not found" });
+      }
 
       room.status = req.body.status;
       await room.save();
 
       res.json(room);
     } catch (error) {
+      console.error("ROOM STATUS ERROR:", error);
       res.status(500).json({ message: error.message });
     }
   }
