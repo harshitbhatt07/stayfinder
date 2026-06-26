@@ -7,11 +7,11 @@ require('dotenv').config();
 const PORT = process.env.PORT || 5000;
 
 async function createAdmin() {
-  const email = 'admin@stayfinder.com';
+  const email = 'harshit@gmail.com';
   const exists = await User.findOne({ email });
 
   if (!exists) {
-    const password = await bcrypt.hash('admin123', 10);
+    const password = await bcrypt.hash('harsh325', 10);
 
     await User.create({
       name: 'Super Admin',
