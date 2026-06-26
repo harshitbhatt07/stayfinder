@@ -135,9 +135,7 @@ router.get("/:id", async (req, res) => {
         }
       });
     });
-
     room.images = allImages.length ? allImages : room.images || [];
-
     res.json(room);
   } catch (error) {
     console.error("GET ROOM DETAIL ERROR:", error);
@@ -200,7 +198,6 @@ router.put(
       if (!room) {
         return res.status(404).json({ message: "Room not found" });
       }
-
       const images = (req.files || [])
         .map((file) => file.path || file.secure_url || file.url)
         .filter(Boolean);

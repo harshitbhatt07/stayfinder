@@ -1,3 +1,52 @@
 import React from "react";
-import{useState}from'react';import{useNavigate,Link}from'react-router-dom';import api from '../api';import{setAuth}from'../utils/auth';
-export default function Login(){const[form,setForm]=useState({role:'tourist'});const nav=useNavigate();const submit=async(e)=>{e.preventDefault();try{const{data}=await api.post('/auth/login',form);setAuth(data.user,data.token);if(data.user.role==='tourist')nav('/');else if(data.user.role==='owner')nav('/owner');else nav('/admin')}catch(err){alert(err.response?.data?.message||'Login error')}};return <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow mt-10"><h1 className="text-3xl font-bold mb-6">Login</h1><form onSubmit={submit} className="grid gap-4"><select className="border p-3 rounded" onChange={e=>setForm({...form,role:e.target.value})}><option value="tourist">Tourist</option><option value="owner">Property Owner</option><option value="admin">Admin</option></select><input type="email" placeholder="Email" className="border p-3 rounded" onChange={e=>setForm({...form,email:e.target.value})}/><input type="password" placeholder="Password" className="border p-3 rounded" onChange={e=>setForm({...form,password:e.target.value})}/><button className="bg-blue-600 text-white p-3 rounded-lg">Login</button><Link to="/register" className="text-blue-600">Create new account</Link></form></div>}
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import api from "../api";
+import { setAuth } from "../utils/auth";
+export default function Login() {
+  const [form, setForm] = useState({ role: "tourist" });
+  const nav = useNavigate();
+  const submit = async (e) => {
+    e.preventDefault();
+    try {
+      const { data } = await api.post("/auth/login", form);
+      setAuth(data.user, data.token);
+      if (data.user.role === "tourist") nav("/");
+      else if (data.user.role === "owner") nav("/owner");
+      else nav("/admin");
+    } catch (err) {
+      alert(err.response?.data?.message || "Login error");
+    }
+  };
+  return (
+    <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow mt-10">
+      <h1 className="text-3xl font-bold mb-6">Login</h1>
+      <form onSubmit={submit} className="grid gap-4">
+        <select
+          className="border p-3 rounded"
+          onChange={(e) => setForm({ ...form, role: e.target.value })}
+        >
+          <option value="tourist">Tourist</option>
+          <option value="owner">Property Owner</option>
+          <option value="admin">Admin</option>
+        </select>
+        <input
+          type="email"
+          placeholder="Email"
+          className="border p-3 rounded"
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          className="border p-3 rounded"
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+        />
+        <button className="bg-blue-600 text-white p-3 rounded-lg">Login</button>
+        <Link to="/register" className="text-blue-600">
+          Create new account
+        </Link>
+      </form>
+    </div>
+  );
+}
